@@ -1,0 +1,322 @@
+{
+  "entities": {
+    "FocoFlowItem": {
+      "title": "FocoFlowItem",
+      "description": "Polymorphic FocoFlow items (tasks, projects, links, notes, etc.)",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "titulo": { "type": "string" },
+        "descricao": { "type": "string" },
+        "status": { "type": "string", "enum": ["todo", "in_progress", "done", "active", "completed", "abandoned"] },
+        "prioridade": { "type": "string", "enum": ["low", "medium", "high"] },
+        "reminder_time": { "type": "number" },
+        "categoria": { "type": "string" },
+        "project_id": { "type": "string" },
+        "criado_em": { "type": "number" },
+        "atualizado_em": { "type": "number" },
+        "id": { "type": "string" },
+        "nome": { "type": "string" },
+        "color": { "type": "string" },
+        "reminderTime": { "type": "number" },
+        "url": { "type": "string" }
+      },
+      "required": ["uid", "categoria", "titulo"]
+    },
+    "FocoFlowTransaction": {
+      "title": "FocoFlowTransaction",
+      "description": "Financial transactions",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "descricao": { "type": "string" },
+        "valor": { "type": "number" },
+        "tipo": { "type": "string", "enum": ["income", "expense"] },
+        "categoria": { "type": "string" },
+        "origin_type": { "type": "string" },
+        "data": { "type": "number" },
+        "paymentMethod": { "type": "string" },
+        "sourceAccount": { "type": "string" },
+        "destinationAccount": { "type": "string" },
+        "relatedPerson": { "type": "string" },
+        "observations": { "type": "string" },
+        "impactsEquity": { "type": "boolean" },
+        "criado_em": { "type": "number" },
+        "atualizado_em": { "type": "number" },
+        "id": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "completed"] }
+      },
+      "required": ["uid", "descricao", "valor", "tipo", "data"]
+    },
+    "FocoFlowFinancialGoal": {
+      "title": "FocoFlowFinancialGoal",
+      "description": "Financial goals",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "titulo": { "type": "string" },
+        "valor_alvo": { "type": "number" },
+        "valor_atual": { "type": "number" },
+        "prazo": { "type": "number" },
+        "categoria": { "type": "string" },
+        "cor": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "completed", "abandoned"] },
+        "criado_em": { "type": "number" },
+        "atualizado_em": { "type": "number" },
+        "id": { "type": "string" }
+      },
+      "required": ["uid", "titulo", "valor_alvo", "status"]
+    },
+    "FocoFlowAccount": {
+      "title": "FocoFlowAccount",
+      "description": "Financial accounts",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "nome": { "type": "string" },
+        "tipo": { "type": "string" },
+        "bank": { "type": "string" },
+        "balance": { "type": "number" },
+        "color": { "type": "string" },
+        "criado_em": { "type": "number" },
+        "atualizado_em": { "type": "number" },
+        "id": { "type": "string" }
+      },
+      "required": ["uid", "nome"]
+    },
+    "FocoFlowRecurring": {
+      "title": "FocoFlowRecurring",
+      "description": "Recurring transactions",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "descricao": { "type": "string" },
+        "valor": { "type": "number" },
+        "tipo": { "type": "string", "enum": ["income", "expense"] },
+        "frequency": { "type": "string", "enum": ["daily", "weekly", "monthly", "yearly"] },
+        "startDate": { "type": "number" },
+        "nextDate": { "type": "number" },
+        "isActive": { "type": "boolean" },
+        "criado_em": { "type": "number" },
+        "atualizado_em": { "type": "number" },
+        "id": { "type": "string" }
+      },
+      "required": ["uid", "descricao", "valor"]
+    },
+    "FocoFlowThirdParty": {
+      "title": "FocoFlowThirdParty",
+      "description": "Third party contacts",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "nome": { "type": "string" },
+        "tipo": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "document": { "type": "string" },
+        "contact": { "type": "string" },
+        "balance": { "type": "number" },
+        "criado_em": { "type": "number" },
+        "atualizado_em": { "type": "number" },
+        "id": { "type": "string" }
+      },
+      "required": ["uid", "nome"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User account profile",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "user"] },
+        "status": { "type": "string", "enum": ["active", "blocked", "pending"] },
+        "createdAt": { "type": "object" },
+        "subscriptionStatus": { "type": "string" },
+        "lastSeen": { "type": "object" },
+        "allowedIP": { "type": "string" },
+        "userPreferredName": { "type": "string" },
+        "termsAccepted": { "type": "boolean" },
+        "termsAcceptedAt": { "type": "object" },
+        "theme": { "type": "string" },
+        "customThemeColor": { "type": "string" },
+        "voiceName": { "type": "string" },
+        "voiceSpeed": { "type": "number" },
+        "voicePitch": { "type": "number" },
+        "textToSpeechEnabled": { "type": "boolean" },
+        "usingOwnKey": { "type": "boolean" },
+        "youtubeApiKey": { "type": "string" },
+        "alarmSound": { "type": "string" },
+        "usage": { "type": "object" },
+        "userLocation": { "type": "object" }
+      },
+      "required": ["uid", "email"]
+    },
+    "AuthorizedEmail": {
+      "title": "AuthorizedEmail",
+      "description": "Whitelist of authorized users",
+      "type": "object",
+      "properties": {
+        "status": { "type": "string", "enum": ["active", "blocked"] },
+        "addedAt": { "type": "object" },
+        "addedBy": { "type": "string" }
+      },
+      "required": ["status", "addedAt"]
+    },
+    "SecurityLog": {
+      "title": "SecurityLog",
+      "description": "System security audit logs",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "email": { "type": "string" },
+        "action": { "type": "string" },
+        "timestamp": { "type": "object" },
+        "status": { "type": "string" },
+        "ip": { "type": "string" },
+        "details": { "type": "string" }
+      },
+      "required": ["email", "action", "timestamp", "status"]
+    },
+    "Memory": {
+      "title": "Memory",
+      "description": "AI semantic memory fragments",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "text": { "type": "string" },
+        "timestamp": { "type": "number" },
+        "importance": { "type": "number" }
+      },
+      "required": ["uid", "text"]
+    },
+    "Conversation": {
+      "title": "Conversation",
+      "description": "Chat sessions",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "title": { "type": "string" },
+        "isArchived": { "type": "boolean" },
+        "summary": { "type": "string" },
+        "updatedAt": { "type": "object" },
+        "createdAt": { "type": "object" }
+      },
+      "required": ["uid", "title"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Individual chat messages",
+      "type": "object",
+      "properties": {
+        "role": { "type": "string", "enum": ["user", "model", "assistant", "system"] },
+        "text": { "type": "string" },
+        "timestamp": { "type": "object" }
+      },
+      "required": ["role", "text", "timestamp"]
+    },
+    "SystemNotification": {
+      "title": "SystemNotification",
+      "description": "System broadcast or targeted notification",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "type": { "type": "string", "enum": ["info", "warning", "error", "success"] },
+        "timestamp": { "type": "object" },
+        "targetUserId": { "type": "string" },
+        "isRead": { "type": "boolean" }
+      },
+      "required": ["title", "message", "type", "timestamp"]
+    },
+    "GeneratedImage": {
+      "title": "GeneratedImage",
+      "description": "Images generated by AI",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "url": { "type": "string" },
+        "prompt": { "type": "string" },
+        "style": { "type": "string" },
+        "aspectRatio": { "type": "string" },
+        "criado_em": { "type": "object" }
+      },
+      "required": ["uid", "url", "prompt", "criado_em"]
+    },
+    "CustomAgent": {
+      "title": "CustomAgent",
+      "description": "User created AI personas",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "systemInstruction": { "type": "string" },
+        "criado_em": { "type": "object" }
+      },
+      "required": ["name", "systemInstruction", "criado_em"]
+    }
+  },
+  "firestore": {
+    "/itens_focoflow/{itemId}": {
+      "schema": "FocoFlowItem",
+      "description": "All FocoFlow tasks, projects, reminders, links, and notes"
+    },
+    "/transacoes_financeiras_focoflow/{transactionId}": {
+      "schema": "FocoFlowTransaction",
+      "description": "All financial transactions"
+    },
+    "/metas_financeiras_focoflow/{goalId}": {
+      "schema": "FocoFlowFinancialGoal",
+      "description": "User financial goals"
+    },
+    "/contas_focoflow/{accountId}": {
+      "schema": "FocoFlowAccount",
+      "description": "User financial accounts"
+    },
+    "/recorrentes_focoflow/{recurringId}": {
+      "schema": "FocoFlowRecurring",
+      "description": "Recurring payments"
+    },
+    "/terceiros_focoflow/{thirdPartyId}": {
+      "schema": "FocoFlowThirdParty",
+      "description": "Contact book"
+    },
+    "/Usuarios/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profiles and settings"
+    },
+    "/Usuarios/{userId}/imagens_geradas/{imageId}": {
+      "schema": "GeneratedImage",
+      "description": "User gallery of generated images"
+    },
+    "/Usuarios/{userId}/custom_agents/{agentId}": {
+      "schema": "CustomAgent",
+      "description": "User created AI agents"
+    },
+    "/authorized_emails/{email}": {
+      "schema": "AuthorizedEmail",
+      "description": "Admin whitelist"
+    },
+    "/security_logs/{logId}": {
+      "schema": "SecurityLog",
+      "description": "Audit trails for security events"
+    },
+    "/memoria_atlas/{memoryId}": {
+      "schema": "Memory",
+      "description": "AI long term memory fragments"
+    },
+    "/conversas/{conversationId}": {
+      "schema": "Conversation",
+      "description": "Chat sessions"
+    },
+    "/conversas/{conversationId}/mensagens/{messageId}": {
+      "schema": "Message",
+      "description": "Message logs within a conversation"
+    },
+    "/system_notifications/{notificationId}": {
+      "schema": "SystemNotification",
+      "description": "Broadcast and user-specific notifications"
+    }
+  }
+}

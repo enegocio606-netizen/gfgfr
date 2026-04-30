@@ -1,0 +1,196 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Global Helpers ---
+    function isSignedIn() { return request.auth != null; }
+    function isVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isImmutable(field) { return incoming().get(field, existing().get(field, null)) == existing().get(field, null); }
+    
+    function isAdmin() { 
+      return isSignedIn() && (
+        request.auth.token.email == 'enegocio606@gmail.com' ||
+        request.auth.token.email == 'atlas@system.com' ||
+        exists(/databases/$(database)/documents/authorized_emails/$(request.auth.token.email))
+      );
+    }
+
+    // --- Entity Validations ---
+    
+    // Pillar 2: Validation Blueprints
+    function isValidFocoFlowItem(data) {
+      let requiredFields = ['uid', 'categoria', 'titulo', 'id', 'criado_em'];
+      return data.keys().hasAll(requiredFields) &&
+             (data.uid == request.auth.uid || isAdmin()) &&
+             data.titulo is string && data.titulo.size() <= 500 &&
+             data.categoria is string && data.categoria in ['task', 'project', 'reminder', 'link', 'youtube', 'note', 'tarefa'] &&
+             (data.get('status', 'todo') in ['todo', 'in_progress', 'done', 'active', 'completed', 'abandoned']) &&
+             (data.get('prioridade', 'medium') in ['low', 'medium', 'high']) &&
+             (data.get('descricao', '').size() <= 5000);
+    }
+
+    function isValidTransaction(data) {
+      let requiredFields = ['uid', 'descricao', 'valor', 'tipo', 'data', 'id', 'criado_em'];
+      return data.keys().hasAll(requiredFields) &&
+             (data.uid == request.auth.uid || isAdmin()) &&
+             data.descricao is string && data.descricao.size() <= 500 &&
+             data.valor is number &&
+             data.tipo in ['income', 'expense'] &&
+             data.data is number;
+    }
+
+    function isValidUserProfile(data) {
+      let requiredFields = ['uid', 'email'];
+      return data.keys().hasAll(requiredFields) &&
+             (data.uid == request.auth.uid || isAdmin()) &&
+             data.email is string && data.email.size() <= 256;
+    }
+
+    // --- Collection Rules ---
+
+    // FocoFlow Items (Tasks, Projects, etc)
+    match /itens_focoflow/{itemId} {
+      allow get: if isSignedIn() && (existing().uid == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+      
+      allow create: if isVerified() && isValidId(itemId) && 
+                       isValidFocoFlowItem(incoming()) && 
+                       incoming().keys().size() <= 15; // Limit shadow fields
+                       
+      allow update: if isVerified() && (existing().uid == request.auth.uid || isAdmin()) && 
+                       isValidFocoFlowItem(incoming()) &&
+                       isImmutable('uid') && isImmutable('criado_em') &&
+                       (
+                         // Pillar 7: Terminal State Locking
+                         !(existing().status in ['completed', 'abandoned']) || isAdmin() || 
+                         // Allow status change even if terminal if the action is specifically changing status
+                         incoming().diff(existing()).affectedKeys().hasOnly(['status', 'atualizado_em'])
+                       );
+                       
+      allow delete: if isVerified() && (existing().uid == request.auth.uid || isAdmin());
+    }
+
+    // Transactions
+    match /transacoes_financeiras_focoflow/{transactionId} {
+      allow get: if isSignedIn() && (existing().uid == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+      
+      allow create: if isVerified() && isValidId(transactionId) && 
+                       isValidTransaction(incoming()) &&
+                       incoming().keys().size() <= 20;
+                       
+      allow update: if isVerified() && (existing().uid == request.auth.uid || isAdmin()) &&
+                       isValidTransaction(incoming()) &&
+                       isImmutable('uid') && isImmutable('criado_em');
+                       
+      allow delete: if isVerified() && (existing().uid == request.auth.uid || isAdmin());
+    }
+
+    // User profiles
+    match /Usuarios/{userId} {
+      // Pillar 6: PII Isolation - only owner/admin can read/write
+      allow get: if isSignedIn() && (userId == request.auth.uid || isAdmin());
+      allow list: if isAdmin(); // Pillar 8: Forbidden blanket user listing
+      
+      allow create: if isVerified() && userId == request.auth.uid && 
+                       isValidUserProfile(incoming());
+                       
+      allow update: if isVerified() && (userId == request.auth.uid || isAdmin()) && 
+                       isImmutable('uid') && isImmutable('email') &&
+                       (!incoming().keys().hasAny(['role', 'status']) || isAdmin()); // Pillar 4: Tiered Identity
+      
+      match /imagens_geradas/{imageId} {
+        allow read: if isSignedIn() && (userId == request.auth.uid || isAdmin());
+        allow write: if isVerified() && (userId == request.auth.uid || isAdmin());
+      }
+      match /custom_agents/{agentId} {
+        allow read: if isSignedIn() && (userId == request.auth.uid || isAdmin());
+        allow write: if isVerified() && (userId == request.auth.uid || isAdmin());
+      }
+    }
+
+    // Conversations
+    match /conversas/{conversationId} {
+      allow get: if isSignedIn() && (existing().uid == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+      
+      allow create: if isVerified() && isValidId(conversationId) && 
+                       (incoming().uid == request.auth.uid || isAdmin()) &&
+                       incoming().keys().hasAll(['uid', 'title']);
+                       
+      allow update: if isVerified() && (existing().uid == request.auth.uid || isAdmin()) && 
+                       isImmutable('uid');
+                       
+      allow delete: if isVerified() && (existing().uid == request.auth.uid || isAdmin());
+
+      match /mensagens/{messageId} {
+        // Pillar 1: Master Gate (Relational Sync)
+        allow read: if isSignedIn() && (get(/databases/$(database)/documents/conversas/$(conversationId)).data.uid == request.auth.uid || isAdmin());
+        allow create: if isVerified() && (get(/databases/$(database)/documents/conversas/$(conversationId)).data.uid == request.auth.uid || isAdmin()) &&
+                         incoming().role in ['user', 'assistant', 'model', 'system'] &&
+                         incoming().text is string && incoming().text.size() <= 10000;
+      }
+    }
+
+    // Finance/Shared Rules
+    match /metas_financeiras_focoflow/{id} {
+      allow read: if isSignedIn() && (existing().uid == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow create: if isVerified() && isValidId(id) && (incoming().uid == request.auth.uid || isAdmin());
+      allow update: if isVerified() && (existing().uid == request.auth.uid || isAdmin()) && isImmutable('uid');
+      allow delete: if isVerified() && (existing().uid == request.auth.uid || isAdmin());
+    }
+    match /contas_focoflow/{id} {
+      allow read: if isSignedIn() && (existing().uid == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow create: if isVerified() && isValidId(id) && (incoming().uid == request.auth.uid || isAdmin());
+      allow update: if isVerified() && (existing().uid == request.auth.uid || isAdmin()) && isImmutable('uid');
+      allow delete: if isVerified() && (existing().uid == request.auth.uid || isAdmin());
+    }
+    match /recorrentes_focoflow/{id} {
+      allow read: if isSignedIn() && (existing().uid == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow create: if isVerified() && isValidId(id) && (incoming().uid == request.auth.uid || isAdmin());
+      allow update: if isVerified() && (existing().uid == request.auth.uid || isAdmin()) && isImmutable('uid');
+      allow delete: if isVerified() && (existing().uid == request.auth.uid || isAdmin());
+    }
+    match /terceiros_focoflow/{id} {
+      allow read: if isSignedIn() && (existing().uid == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow create: if isVerified() && isValidId(id) && (incoming().uid == request.auth.uid || isAdmin());
+      allow update: if isVerified() && (existing().uid == request.auth.uid || isAdmin()) && isImmutable('uid');
+      allow delete: if isVerified() && (existing().uid == request.auth.uid || isAdmin());
+    }
+
+    // Security and Admin
+    match /authorized_emails/{email} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+    match /security_logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isSignedIn(); 
+      allow update, delete: if false; // Pillar 12: Immutable logs
+    }
+    
+    match /system_notifications/{id} {
+      allow read: if isSignedIn() && (existing().targetUserId == request.auth.uid || existing().targetUserId == 'all' || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    match /memoria_atlas/{id} {
+      allow read: if isSignedIn() && (existing().uid == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow create: if isVerified() && isValidId(id) && (incoming().uid == request.auth.uid || isAdmin());
+      allow update: if isVerified() && (existing().uid == request.auth.uid || isAdmin()) && isImmutable('uid');
+      allow delete: if isVerified() && (existing().uid == request.auth.uid || isAdmin());
+    }
+  }
+}

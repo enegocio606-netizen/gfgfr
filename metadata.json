@@ -1,0 +1,9 @@
+{
+  "name": "Remix: Remix: Remix: Remix: Remix: Remix: ATLAS IA OS",
+  "description": "Sistema Operacional e Assistente de IA de Próxima Geração com visão, voz e gestão financeira avançada FocoFlow.",
+  "requestFramePermissions": [
+    "microphone",
+    "display-capture",
+    "camera"
+  ]
+}
